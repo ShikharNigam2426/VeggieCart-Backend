@@ -12,6 +12,7 @@ import com.Veggie.Cart.ServiceInt.ForgotPassword;
 import org.springframework.stereotype.Service;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.mail.javamail.JavaMailSender;
+import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 
 @Service
 public class ForgotPasswordService implements ForgotPassword{
@@ -53,6 +54,7 @@ public class ForgotPasswordService implements ForgotPassword{
 				String name=existingEntity.getName();
 				Register update = new Register(email, existingEntity.getPassword(), generatedOTP, 1,name,existingEntity.getAddress());
 				this.register.save(update);
+
 				System.out.println("this is updated otp" + existingEntity.getOtp());
 			}
 		}
@@ -68,8 +70,10 @@ public class ForgotPasswordService implements ForgotPassword{
 			int resetPassword = reset.get().getOtp();
 			if (verifyOtp(resetPassword, resetObj.getOtp())) {
 				System.out.println("verified otp is correct");
-				newEntity.setPassword(resetObj.getPassword());
+				BCryptPasswordEncoder bcrypt=new BCryptPasswordEncoder();
+				newEntity.setPassword(bcrypt.encode(resetObj.getPassword()));
 				register.save(newEntity);
+				System.out.println("this is updatedEntity  "+newEntity);
 				return true;
 			}
 		}

@@ -1,25 +1,32 @@
 package com.Veggie.Cart.Service;
-
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.mail.javamail.JavaMailSender;
+import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.mail.SimpleMailMessage;
 import java.util.List;
 import java.util.Optional;
+
+import com.Veggie.Cart.Dao.AccountsRepo;
 import com.Veggie.Cart.Dao.RegisterDao;
 import com.Veggie.Cart.Entity.*;
+import com.Veggie.Cart.ServiceInt.AccountsInterface;
 import com.Veggie.Cart.ServiceInt.RegisterInterface;
-
 @Service
-public class RegisterService implements RegisterInterface {
+public class RegisterService  implements RegisterInterface {
 	@Autowired
 	private JavaMailSender mailSender;
 	@Autowired
-	private RegisterDao register;
+	private RegisterDao register; 
 	int generatedOTP;
+	@Autowired
+    AccountsRepo accounts;
+	@Autowired
+	AccountsInterface map;
 
+	int numberOfAccounts=0;
 	public List<Register> getUserData() {
 		return this.register.findAll();
 	}
@@ -43,7 +50,24 @@ public class RegisterService implements RegisterInterface {
 				register.setVerified(1);
 				System.out.println(register.getVerified());
 				System.out.println(register);
+				BCryptPasswordEncoder bcrypt=new BCryptPasswordEncoder();
+				String encryptedPassword=bcrypt.encode(register.getPassword());
+				register.setPassword(encryptedPassword);
 				this.register.save(register);
+			    BootHashMapOnStartup.mapUsernamePassword.containsKey(register.getEmail());
+				map.updateMapWithNewRegistration(register);
+				System.out.println(BootHashMapOnStartup.mapUsernamePassword);
+				List<Accounts> list=map.fetchNumberOfAccounts();
+				System.out.println("this is list"+list);
+				if(list.size()==0)
+				{
+				numberOfAccounts+=1;
+				}
+				else {
+				numberOfAccounts=1+list.get(0).getNumberOfAccounts();
+				}
+				Accounts account=new Accounts("Developer@VeggiewCart.com",numberOfAccounts);
+				this.accounts.save(account);
 				return ResponseEntity.status(HttpStatus.OK).body("Registered Successfully");
 			} else {
 				return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
