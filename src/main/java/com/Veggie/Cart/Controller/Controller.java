@@ -1,5 +1,5 @@
 package com.Veggie.Cart.Controller;
-import com.Veggie.Cart.Service.BootHashMapOnStartup;
+
 import java.util.List;
 import javax.mail.MessagingException;
 
@@ -12,18 +12,25 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RestController;
-
 import com.Veggie.Cart.Entity.Accounts;
+import com.Veggie.Cart.Entity.Agent;
 import com.Veggie.Cart.Entity.Cart;
+import com.Veggie.Cart.Entity.CustomerChat;
 import com.Veggie.Cart.Entity.Issue;
 import com.Veggie.Cart.Entity.Login;
+import com.Veggie.Cart.Entity.RedisChat;
 import com.Veggie.Cart.Entity.Register;
 import com.Veggie.Cart.Entity.Reset;
 import com.Veggie.Cart.Entity.Vegetables;
 import com.Veggie.Cart.ServiceInt.AccountsInterface;
+import com.Veggie.Cart.ServiceInt.AgentInterface;
+import com.Veggie.Cart.ServiceInt.AgentRedisChatInterface;
 import com.Veggie.Cart.ServiceInt.CartInterface;
+import com.Veggie.Cart.ServiceInt.CustomerRedisChatInterface;
 import com.Veggie.Cart.ServiceInt.ForgotPassword;
 import com.Veggie.Cart.ServiceInt.LoginInterface;
+import com.Veggie.Cart.ServiceInt.MySqlChatInterface;
+import com.Veggie.Cart.ServiceInt.NumberOfAgentsInterface;
 import com.Veggie.Cart.ServiceInt.RegisterInterface;
 import com.Veggie.Cart.ServiceInt.ResolveIssue;
 import com.Veggie.Cart.ServiceInt.VegetableInterface;
@@ -45,13 +52,111 @@ public class Controller {
 	CartInterface cart;
 	@Autowired
 	AccountsInterface map;
+	@Autowired
+	NumberOfAgentsInterface agent;
+	@Autowired
+	AgentInterface createAgent;
+	@Autowired
+	AgentRedisChatInterface chats;
+	@Autowired
+	CustomerRedisChatInterface customerchats;
+	@Autowired
+	MySqlChatInterface sqlchat;
 
+	/*
+	 * Function to boot Hash Map on startup
+	 */
 	@GetMapping("/BootHashMap")
-    public ResponseEntity<String> bootHashMap(){
-		List<Accounts> list=map.fetchNumberOfAccounts();
-		int numberOfAccounts=list.get(0).getNumberOfAccounts();
-    	return map.bootMap(numberOfAccounts);
-    }
+	public ResponseEntity<String> bootHashMap() {
+		List<Accounts> list = map.fetchNumberOfAccounts();
+		int numberOfAccounts = list.get(0).getNumberOfAccounts();
+		return map.bootMap(numberOfAccounts);
+	}
+
+	@GetMapping("/BootAgentHashMap")
+	public ResponseEntity<String> bootAgentHashMap() {
+		List<Agent> list = agent.fetchNumberOfAgents();
+		int numberOfAccounts = list.get(0).getId();
+		return agent.bootAgentMap(numberOfAccounts);
+	}
+
+	/*
+	 * All these functions are related to Redis Crud operations
+	 */
+	@PostMapping("/saveAgentChatToRedis")
+	public ResponseEntity<String> saveAgentChatToRedis(@RequestBody RedisChat chat) {
+		return this.chats.save(chat);
+	}
+
+	@PostMapping("/saveCustomerChatToRedis")
+	public ResponseEntity<String> saveCustomerChatToRedis(@RequestBody CustomerChat chat) {
+		return this.customerchats.save(chat);
+	}
+
+	@GetMapping("/getAgentChatsInRedis")
+	public List<RedisChat> getAgentChatsInRedis() {
+		return this.chats.findAll();
+	}
+
+	@GetMapping("/getCustomerChatsInRedis")
+	public List<CustomerChat> getCustomerChatsInRedis() {
+		return this.customerchats.findAll();
+	}
+
+	@GetMapping("/isAgentAvailable")
+	public ResponseEntity<Agent> isAgentAvailable() {
+		return this.createAgent.isAgentAvailaible();
+	}
+
+	@GetMapping("/chatRejectedByAgent")
+	public ResponseEntity<Agent> chatRejectedByAgent(@RequestBody int id, boolean rejected) {
+		return this.createAgent.chatRejectedByAgent(id, rejected);
+	}
+
+	@PostMapping("/updateAgentStatusOnLogin")
+	public ResponseEntity<String> updateAgentStatusOnLogin(@RequestBody Agent agent) {
+		return this.createAgent.updateAgentStatusOnLogout(agent);
+	}
+
+	@PostMapping("/updateAgentStatusOnLogout")
+	public ResponseEntity<String> updateAgentStatusOnLogout(@RequestBody Agent agent) {
+		return this.createAgent.updateAgentStatusOnLogout(agent);
+	}
+
+	@PostMapping("/syncAgentRedisWithDatabase")
+	public ResponseEntity<String> syncRedisWithDatabase() {
+		return this.sqlchat.syncAgentRedisWithDatabase();
+	}
+
+	@PostMapping("/syncCustomerRedisWithDatabase")
+	public ResponseEntity<String> syncCustomerRedisWithDatabase() {
+		return this.sqlchat.syncCustomerRedisWithDatabase();
+	}
+
+	@GetMapping("/getCustomerLatestMessage")
+	public ResponseEntity<String> getCustomerLatestMessage() {
+		return this.sqlchat.getCustomerLatestMessage();
+	}
+
+	@GetMapping("/getAgentLatestMessage")
+	public ResponseEntity<String> getAgentLatestMessage() {
+		return this.sqlchat.getAgentLatestMessage();
+	}
+
+	/*
+	 * These are used for other purposes like agent admin and customer login and
+	 * pushing data in database
+	 */
+	@GetMapping("/agentLogin")
+	public ResponseEntity<String> agentLogin(@RequestBody Agent agent) {
+		return this.loginuser.agentLogin(agent);
+	}
+
+	@PostMapping("/createAgent")
+	public ResponseEntity<String> createAgent(@RequestBody Agent agent) {
+		return this.createAgent.saveAgentDetails(agent);
+	}
+
 	@PostMapping("/pushVegetables")
 	public ResponseEntity<String> insertDataInVegetablesDao(@RequestBody List<Vegetables> vegetablesData) {
 		return this.vegetables.saveVegetable(vegetablesData);
