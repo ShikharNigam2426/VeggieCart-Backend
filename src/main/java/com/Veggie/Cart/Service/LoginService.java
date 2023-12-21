@@ -7,6 +7,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.stereotype.Service;
 import com.Veggie.Cart.Dao.RegisterDao;
+import com.Veggie.Cart.Entity.Agent;
 import com.Veggie.Cart.Entity.Login;
 import com.Veggie.Cart.Entity.Register;
 import com.Veggie.Cart.ServiceInt.LoginInterface;
@@ -20,19 +21,18 @@ public class LoginService implements LoginInterface {
 	int isLoggedIn = 0;
 	String emailOfLoggedInUser = "";
 	int isPasswordWrong = 0, isEmailCorrect = 0;
+	int isAgentPasswordWrong = 0, isAgentEmailCorrect = 0;
+
 
 	@Override
 	public ResponseEntity<String> loginUser(Login login) {
+		if(login.getEmail().equals("admin@veggieCart.com")&&login.getPassword().equals("password"))
+			return ResponseEntity.status(200).body("Admin Logging In...");
 		if (!BootHashMapOnStartup.mapUsernamePassword.containsKey(login.getEmail()))
 			return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("User does not exist");
 		else if (BootHashMapOnStartup.mapUsernamePassword.containsKey(login.getEmail())) {
 			isEmailCorrect = 1;
 			BCryptPasswordEncoder bcrypt = new BCryptPasswordEncoder();
-			String password = bcrypt.encode(login.getPassword());
-			System.out.println("Passowrd"+password);
-			System.out.println("@@@@@@@@@"+BootHashMapOnStartup.mapUsernamePassword.get(login.getEmail()));
-			if(password.equals(BootHashMapOnStartup.mapUsernamePassword.get(login.getEmail())))
-				System.out.println("true");
 			if (bcrypt.matches(login.getPassword(),BootHashMapOnStartup.mapUsernamePassword.get(login.getEmail()))) {
 				isPasswordWrong = 1;
 				isLoggedIn = 1;
@@ -89,5 +89,24 @@ public class LoginService implements LoginInterface {
 
 		return ResponseEntity.status(HttpStatus.OK).body("logged in");
 
+	}
+
+	@Override
+	public ResponseEntity<String> agentLogin(Agent agent) {
+		if (!BootHashMapOnStartup.mapAgentUsernamePassword.containsKey(agent.getId()))
+			return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("Agent does not exist");
+		else if(BootHashMapOnStartup.mapAgentUsernamePassword.containsKey(agent.getId())) {
+			System.out.println("Inside containsKEy");
+			isAgentEmailCorrect = 1;
+			BCryptPasswordEncoder bcrypt = new BCryptPasswordEncoder();
+		if (bcrypt.matches(agent.getPassword(),BootHashMapOnStartup.mapAgentUsernamePassword.get(agent.getId()))) {
+				isAgentPasswordWrong = 1;
+				return ResponseEntity.status(HttpStatus.OK).body("Agent Logging In...");
+			} 
+			else if (isAgentEmailCorrect == 0) {
+				return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("Wrong Email");
+			}
+		}
+		return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("Wrong Password");
 	}
 }

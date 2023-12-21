@@ -8,19 +8,26 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 
 import com.Veggie.Cart.Dao.AccountsRepo;
+import com.Veggie.Cart.Dao.AgentRepo;
 import com.Veggie.Cart.Dao.RegisterDao;
 import com.Veggie.Cart.Entity.Accounts;
+import com.Veggie.Cart.Entity.Agent;
 import com.Veggie.Cart.Entity.Register;
 import com.Veggie.Cart.ServiceInt.AccountsInterface;
+import com.Veggie.Cart.ServiceInt.NumberOfAgentsInterface;
 
 @Service
-public class BootHashMapOnStartup implements AccountsInterface {
+public class BootHashMapOnStartup implements AccountsInterface,NumberOfAgentsInterface {
 	@Autowired
 	RegisterDao register;
 	@Autowired
 	AccountsRepo accounts;
+	@Autowired
+	AgentRepo agent;
 
 	static HashMap<String, String> mapUsernamePassword = new HashMap<>();
+	static HashMap<Integer, String> mapAgentUsernamePassword = new HashMap<>();
+
 	@Override
 	public List<Accounts> fetchNumberOfAccounts() {
 		return this.accounts.findAll();
@@ -32,10 +39,6 @@ public class BootHashMapOnStartup implements AccountsInterface {
 
 	@Override
 	public ResponseEntity<String> bootMap(int numberOfAccounts) {
-//		if (!mapUsernamePassword.isEmpty()) {
-//			System.out.println("hm-->"+mapUsernamePassword);
-//			return ResponseEntity.status(200).body("Data already present");
-//		} 
 		System.out.println("Inside service"+mapUsernamePassword.size());
 		if (numberOfAccounts == mapUsernamePassword.size())
 			return ResponseEntity.status(304).body("Data already present in HashMap");
@@ -62,9 +65,35 @@ public class BootHashMapOnStartup implements AccountsInterface {
         }
         System.out.println("Map"+mapUsernamePassword);
     }
-//
-//	@Override
-//	public HashMap<String, String> sendMapToOtherService() {
-//		return this.mapUsernamePassword;
-//	}
+
+	@Override
+	public List<Agent> fetchNumberOfAgents() {
+		return this.agent.findAll();
+	}
+
+	public List<Agent> getAgentData() {
+		return this.agent.findAll();
+	}
+
+	@Override
+	public ResponseEntity<String> bootAgentMap(int numberOfAccounts) {
+		System.out.println("this is accounts number"+numberOfAccounts);
+		System.out.println("this is hashMapSize"+mapAgentUsernamePassword.size());
+		if (numberOfAccounts == mapAgentUsernamePassword.size())
+			return ResponseEntity.status(304).body("Data already present in HashMap");
+		List<Agent> agentsData = getAgentData();
+		if (agentsData != null) {
+			for (Agent agent : agentsData) {
+				if(agent.getPassword().length()>1) {
+				int id = agent.getId();
+				String password = agent.getPassword();
+				if (!mapUsernamePassword.containsKey(id))
+					mapAgentUsernamePassword.put(id, password);
+			}
+			}
+			System.out.println("Inside BootAgent"+mapAgentUsernamePassword);
+			return ResponseEntity.status(200).body("Data filled in HashMap");
+		}
+		return ResponseEntity.status(204).body("No data present in Database");
+	}
 }

@@ -1,6 +1,5 @@
 package com.Veggie.Cart.ServiceInt;
 
-import java.util.HashMap;
 import java.util.List;
 
 import org.springframework.http.ResponseEntity;
@@ -12,5 +11,4 @@ public interface AccountsInterface {
 	public List<Accounts> fetchNumberOfAccounts();
 	public ResponseEntity<String> bootMap(int numberOfAccounts);
 	public void updateMapWithNewRegistration(Register newRegister);
-//	public HashMap<String,String> sendMapToOtherService();
 }
